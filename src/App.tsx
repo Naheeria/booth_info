@@ -198,7 +198,7 @@ export default function DoujinInfoBuilder() {
             <div style={{ display: "flex", gap: 6 }}>
               {[
                 [false, "간단 보기"],
-                [true, "물품 상세 정보"],
+                [true, "상세 보기"],
               ].map(([val, label]) => {
                 const on = detail === val;
                 return <button key={String(val)} onClick={() => setDetail(val as boolean)} style={{
