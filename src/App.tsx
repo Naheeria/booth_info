@@ -81,6 +81,7 @@ export default function DoujinInfoBuilder() {
   const [grid, setGrid] = useState(GRIDS[2]);
   const [detail, setDetail] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [copying, setCopying] = useState(false);
   const cardRef = useRef(null);
 
   const [info, setInfo] = useState({ eventName: "", date: "", hours: "", boothLocation: "", boothName: "", nickname: "", sns: "" });
@@ -114,19 +115,35 @@ export default function DoujinInfoBuilder() {
     setItems(p => p.length >= g.count ? p.slice(0, g.count) : [...p, ...Array.from({ length: g.count - p.length }, makeItem)]);
   };
 
+  const getBlob = async (): Promise<Blob> => {
+    if (!cardRef.current) throw new Error();
+    try {
+      const dataUrl = await toPng(cardRef.current, { pixelRatio: 2, cacheBust: true, skipFonts: true });
+      return await (await fetch(dataUrl)).blob();
+    } catch {
+      return await capturePng(cardRef.current, 2) as Blob;
+    }
+  };
+
   const download = async () => {
     if (!cardRef.current || saving) return;
     setSaving(true);
     try {
-      let blob: Blob;
-      try {
-        const dataUrl = await toPng(cardRef.current, { pixelRatio: 2, cacheBust: true, skipFonts: true });
-        blob = await (await fetch(dataUrl)).blob();
-      } catch { blob = await capturePng(cardRef.current, 2) as Blob; }
+      const blob = await getBlob();
       const a = Object.assign(document.createElement("a"), { href: URL.createObjectURL(blob), download: `${info.boothName || "info"}.png` });
       a.click(); URL.revokeObjectURL(a.href);
     } catch { alert("이미지 저장 실패. 스크린샷을 이용해주세요."); }
     finally { setSaving(false); }
+  };
+
+  const copyToClipboard = async () => {
+    if (!cardRef.current || copying) return;
+    setCopying(true);
+    try {
+      const blob = await getBlob();
+      await navigator.clipboard.write([new ClipboardItem({ "image/png": blob })]);
+    } catch { alert("클립보드 복사 실패. 이미지로 저장 후 이용해주세요."); }
+    finally { setCopying(false); }
   };
 
   const c = theme;
@@ -573,17 +590,29 @@ export default function DoujinInfoBuilder() {
             </div>
           </div>
 
-          {/* Download button */}
-          <button onClick={download} disabled={saving} style={{
-            display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
-            width: "100%", marginTop: 16, padding: "14px 0", borderRadius: 12,
-            border: "none", background: c.accent, color: c.badgeText,
-            fontSize: 15, fontWeight: 700, fontFamily: FONT,
-            cursor: saving ? "wait" : "pointer", opacity: saving ? .6 : 1, transition: "opacity .2s",
-          }}>
-            {saving ? "저장 중…" : "이미지로 저장하기"}
-            {!saving && <span style={{ fontSize: 18 }}>↓</span>}
-          </button>
+          {/* Action buttons */}
+          <div style={{ display: "flex", gap: 10, marginTop: 16 }}>
+            <button onClick={copyToClipboard} disabled={copying} style={{
+              display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
+              flex: 1, padding: "14px 0", borderRadius: 12,
+              border: `2px solid ${c.accent}`, background: c.bg, color: c.accent,
+              fontSize: 15, fontWeight: 700, fontFamily: FONT,
+              cursor: copying ? "wait" : "pointer", opacity: copying ? .6 : 1, transition: "opacity .2s",
+            }}>
+              {copying ? "복사 중…" : "클립보드에 복사"}
+              {!copying && <span style={{ fontSize: 18 }}>⧉</span>}
+            </button>
+            <button onClick={download} disabled={saving} style={{
+              display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
+              flex: 1, padding: "14px 0", borderRadius: 12,
+              border: `2px solid ${c.accent}`, background: c.accent, color: c.badgeText,
+              fontSize: 15, fontWeight: 700, fontFamily: FONT,
+              cursor: saving ? "wait" : "pointer", opacity: saving ? .6 : 1, transition: "opacity .2s",
+            }}>
+              {saving ? "저장 중…" : "이미지로 저장하기"}
+              {!saving && <span style={{ fontSize: 18 }}>↓</span>}
+            </button>
+          </div>
           <p style={{ textAlign: "center", fontSize: 11, color: c.sub, marginTop: 10 }}>PNG 2x 해상도로 저장됩니다</p>
         </>}
       </div>
