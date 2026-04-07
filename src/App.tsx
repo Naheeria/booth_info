@@ -67,9 +67,10 @@ async function capturePng(node: HTMLElement, scale = 2) {
   const ctx = canvas.getContext("2d")!; ctx.scale(scale, scale);
   return new Promise((ok, fail) => {
     const img = new Image();
-    img.onload = () => { ctx.drawImage(img, 0, 0); canvas.toBlob(b => b ? ok(b) : fail(), "image/png"); };
-    img.onerror = fail;
-    img.src = URL.createObjectURL(new Blob([svg], { type: "image/svg+xml;charset=utf-8" }));
+    const blobUrl = URL.createObjectURL(new Blob([svg], { type: "image/svg+xml;charset=utf-8" }));
+    img.onload = () => { ctx.drawImage(img, 0, 0); URL.revokeObjectURL(blobUrl); canvas.toBlob(b => b ? ok(b) : fail(), "image/png"); };
+    img.onerror = () => { URL.revokeObjectURL(blobUrl); fail(); };
+    img.src = blobUrl;
   });
 }
 
@@ -92,9 +93,20 @@ export default function DoujinInfoBuilder() {
   const handleImg = (idx: number, e: React.ChangeEvent<HTMLInputElement>) => {
     const f = e.target.files?.[0];
     if (!f) return;
+    if (f.size > 10 * 1024 * 1024) { alert("10MB 이하의 이미지만 업로드할 수 있습니다."); return; }
     const r = new FileReader();
     r.onload = ev => setI(idx, "image", ev.target?.result as string);
     r.readAsDataURL(f);
+  };
+
+  const moveItem = (idx: number, dir: -1 | 1) => {
+    setItems(p => {
+      const next = [...p];
+      const target = idx + dir;
+      if (target < 0 || target >= next.length) return p;
+      [next[idx], next[target]] = [next[target], next[idx]];
+      return next;
+    });
   };
 
   const changeGrid = (g: typeof GRIDS[0]) => {
@@ -273,7 +285,23 @@ export default function DoujinInfoBuilder() {
             <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
               {items.map((item, idx) => (
                 <div key={item.id} style={{ padding: 14, borderRadius: 14, border: `1px solid ${c.border}`, background: c.card }}>
-                  <div style={{ fontSize: 12, fontWeight: 700, color: c.accent, marginBottom: 10 }}>#{idx + 1}</div>
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
+                    <div style={{ fontSize: 12, fontWeight: 700, color: c.accent }}>#{idx + 1}</div>
+                    <div style={{ display: "flex", gap: 4 }}>
+                      <button onClick={() => moveItem(idx, -1)} disabled={idx === 0} style={{
+                        width: 28, height: 28, borderRadius: 6, border: `1px solid ${c.border}`,
+                        background: idx === 0 ? "transparent" : c.bg, color: idx === 0 ? c.border : c.text,
+                        fontSize: 14, cursor: idx === 0 ? "default" : "pointer",
+                        display: "flex", alignItems: "center", justifyContent: "center",
+                      }}>↑</button>
+                      <button onClick={() => moveItem(idx, 1)} disabled={idx === items.length - 1} style={{
+                        width: 28, height: 28, borderRadius: 6, border: `1px solid ${c.border}`,
+                        background: idx === items.length - 1 ? "transparent" : c.bg, color: idx === items.length - 1 ? c.border : c.text,
+                        fontSize: 14, cursor: idx === items.length - 1 ? "default" : "pointer",
+                        display: "flex", alignItems: "center", justifyContent: "center",
+                      }}>↓</button>
+                    </div>
+                  </div>
 
                   {/* Image upload — simple label wrapping approach */}
                   <div style={{ marginBottom: 10 }}>
@@ -306,12 +334,13 @@ export default function DoujinInfoBuilder() {
                   {/* Badge selector */}
                   <div style={{ marginBottom: 10, display: "flex", flexDirection: "column", gap: 8 }}>
                     <label style={{ fontSize: 11, fontWeight: 600, color: c.sub, letterSpacing: ".04em" }}>뱃지:</label>
-                    <div style={{ display: "flex", gap: 10 }}>
+                    <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
                       {["R15", "R18"].map(val => (
                         <button
                           key={val}
                           onClick={() => setI(idx, "rating", item.rating === val ? "none" : val)}
                           style={{
+                            flexShrink: 0,
                             padding: "6px 12px",
                             borderRadius: 6,
                             border: `2px solid ${item.rating === val ? (val === "R15" ? "#FF9500" : "#FF3333") : c.border}`,
@@ -325,10 +354,7 @@ export default function DoujinInfoBuilder() {
                           {val}
                         </button>
                       ))}
-                    </div>
-                    <div>
-                      <label style={lbl}>추가 텍스트</label>
-                      <CInput value={item.customText} onChange={v => setI(idx, "customText", v)} placeholder="소량, 극소량, 현판 ONLY 등" style={inp as React.CSSProperties} onFocus={fc} onBlur={bl} />
+                      <CInput value={item.customText} onChange={v => setI(idx, "customText", v)} placeholder="소량, 현판 ONLY 등" style={{ ...inp, flex: 1 } as React.CSSProperties} onFocus={fc} onBlur={bl} />
                     </div>
                   </div>
 
