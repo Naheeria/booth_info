@@ -23,7 +23,7 @@ const GRIDS = [
 ];
 
 const uid = () => `${Date.now()}-${Math.random().toString(36).slice(2)}`;
-const makeItem = () => ({ id: uid(), image: null, title: "", spec: "", price: "", synopsis: "", rating: "none" });
+const makeItem = () => ({ id: uid(), image: null, title: "", spec: "", price: "", synopsis: "", rating: "none", customText: "" });
 
 /* ── IME-safe input ── */
 function CInput({ value, onChange, multiline, style, ...rest }: {
@@ -303,23 +303,33 @@ export default function DoujinInfoBuilder() {
                     )}
                   </div>
 
-                  {/* Rating selector */}
-                  <div style={{ marginBottom: 10, display: "flex", gap: 10, alignItems: "center" }}>
-                    <label style={{ fontSize: 11, fontWeight: 600, color: c.sub, letterSpacing: ".04em" }}>등급:</label>
-                    {["none", "R15", "R18"].map(val => (
-                      <label key={val} style={{ display: "flex", alignItems: "center", gap: 5, cursor: "pointer", userSelect: "none" }}>
-                        <input
-                          type="radio"
-                          name={`rating-${item.id}`}
-                          checked={item.rating === val}
-                          onChange={() => setI(idx, "rating", val)}
-                          style={{ cursor: "pointer" }}
-                        />
-                        <span style={{ fontSize: 12, fontWeight: 500, color: c.text }}>
-                          {val === "none" ? "없음" : val}
-                        </span>
-                      </label>
-                    ))}
+                  {/* Badge selector */}
+                  <div style={{ marginBottom: 10, display: "flex", flexDirection: "column", gap: 8 }}>
+                    <label style={{ fontSize: 11, fontWeight: 600, color: c.sub, letterSpacing: ".04em" }}>뱃지:</label>
+                    <div style={{ display: "flex", gap: 10 }}>
+                      {["R15", "R18"].map(val => (
+                        <button
+                          key={val}
+                          onClick={() => setI(idx, "rating", item.rating === val ? "none" : val)}
+                          style={{
+                            padding: "6px 12px",
+                            borderRadius: 6,
+                            border: `2px solid ${item.rating === val ? (val === "R15" ? "#FF9500" : "#FF3333") : c.border}`,
+                            background: item.rating === val ? (val === "R15" ? "#FF9500" : "#FF3333") : "transparent",
+                            color: item.rating === val ? "#fff" : c.text,
+                            fontSize: 12,
+                            fontWeight: 600,
+                            cursor: "pointer",
+                            transition: "all .2s",
+                          }}>
+                          {val}
+                        </button>
+                      ))}
+                    </div>
+                    <div>
+                      <label style={lbl}>추가 텍스트</label>
+                      <CInput value={item.customText} onChange={v => setI(idx, "customText", v)} placeholder="소량, 극소량, 현판 ONLY 등" style={inp as React.CSSProperties} onFocus={fc} onBlur={bl} />
+                    </div>
                   </div>
 
                   <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
@@ -418,10 +428,26 @@ export default function DoujinInfoBuilder() {
                           color: "#fff",
                           fontSize: 10,
                           fontWeight: 800,
+                          marginRight: 4,
                           marginBottom: 4,
                           lineHeight: 1,
                         }}>
                           {it.rating}
+                        </div>
+                      )}
+                      {it.customText && (
+                        <div style={{
+                          display: "inline-block",
+                          padding: "4px 8px",
+                          borderRadius: 3,
+                          background: c.accent2,
+                          color: "#fff",
+                          fontSize: 10,
+                          fontWeight: 800,
+                          marginBottom: 4,
+                          lineHeight: 1,
+                        }}>
+                          {it.customText}
                         </div>
                       )}
                       {it.title && <div style={{ fontSize: 14, fontWeight: 800, color: c.text, lineHeight: 1.3, marginBottom: 3, wordBreak: "keep-all" }}>{it.title}</div>}
@@ -468,10 +494,27 @@ export default function DoujinInfoBuilder() {
                           fontSize: 10,
                           fontWeight: 800,
                           marginBottom: 2,
+                          marginRight: 4,
                           lineHeight: 1,
                           width: "fit-content",
                         }}>
                           {it.rating}
+                        </div>
+                      )}
+                      {it.customText && (
+                        <div style={{
+                          display: "inline-block",
+                          padding: "4px 8px",
+                          borderRadius: 3,
+                          background: c.accent2,
+                          color: "#fff",
+                          fontSize: 10,
+                          fontWeight: 800,
+                          marginBottom: 2,
+                          lineHeight: 1,
+                          width: "fit-content",
+                        }}>
+                          {it.customText}
                         </div>
                       )}
                       {it.title && <div style={{ fontSize: 16, fontWeight: 800, color: c.text, lineHeight: 1.3, wordBreak: "keep-all" }}>{it.title}</div>}
