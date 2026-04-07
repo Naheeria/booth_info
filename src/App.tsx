@@ -1,4 +1,6 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef } from "react";
+// @ts-expect-error ESM import from CDN which TypeScript does not recognize
+import { toPng } from "https://esm.sh/html-to-image@1.11.11";
 
 const FONT = "'Pretendard Variable','Noto Sans KR',-apple-system,BlinkMacSystemFont,system-ui,sans-serif";
 
@@ -21,20 +23,31 @@ const GRIDS = [
 ];
 
 const uid = () => `${Date.now()}-${Math.random().toString(36).slice(2)}`;
-const makeItem = () => ({ id: uid(), image: null, title: "", spec: "", price: "", synopsis: "", r15: false, r18: false, badgeText: "" });
+const makeItem = () => ({ id: uid(), image: null, title: "", spec: "", price: "", synopsis: "" });
 
 /* ── IME-safe input ── */
-function CInput({ value, onChange, multiline, style, ...rest }) {
+function CInput({ value, onChange, multiline, style, ...rest }: {
+  value: string;
+  onChange: (value: string) => void;
+  multiline?: boolean;
+  style?: React.CSSProperties;
+} & Omit<React.InputHTMLAttributes<HTMLInputElement>, 'value' | 'onChange' | 'onCompositionStart' | 'onCompositionEnd'> & Omit<React.TextareaHTMLAttributes<HTMLTextAreaElement>, 'value' | 'onChange' | 'onCompositionStart' | 'onCompositionEnd'>) {
   const [local, setLocal] = useState(value);
   const comp = useRef(false);
-  useEffect(() => { if (!comp.current) setLocal(value); }, [value]);
   const Tag = multiline ? "textarea" : "input";
   return (
     <Tag
       value={local}
-      onChange={(e) => { setLocal(e.target.value); if (!comp.current) onChange(e.target.value); }}
+      onChange={(e) => {
+        setLocal(e.target.value);
+        if (!comp.current) onChange(e.target.value);
+      }}
       onCompositionStart={() => { comp.current = true; }}
-      onCompositionEnd={(e) => { comp.current = false; setLocal(e.target.value); onChange(e.target.value); }}
+      onCompositionEnd={(e: React.CompositionEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+        comp.current = false;
+        setLocal((e.target as HTMLInputElement | HTMLTextAreaElement).value);
+        onChange((e.target as HTMLInputElement | HTMLTextAreaElement).value);
+      }}
       style={style}
       {...rest}
     />
@@ -42,16 +55,16 @@ function CInput({ value, onChange, multiline, style, ...rest }) {
 }
 
 /* ── PNG capture ── */
-async function capturePng(node, scale = 2) {
+async function capturePng(node: HTMLElement, scale = 2) {
   const w = node.scrollWidth, h = node.scrollHeight;
-  const clone = node.cloneNode(true);
+  const clone = node.cloneNode(true) as HTMLElement;
   const srcEls = node.querySelectorAll("*"), clnEls = clone.querySelectorAll("*");
-  const cp = (s, d) => { const cs = getComputedStyle(s); for (let i = 0; i < cs.length; i++) d.style.setProperty(cs[i], cs.getPropertyValue(cs[i])); };
-  cp(node, clone); for (let i = 0; i < srcEls.length; i++) cp(srcEls[i], clnEls[i]);
+  const cp = (s: Element, d: HTMLElement) => { const cs = getComputedStyle(s); for (let i = 0; i < cs.length; i++) d.style.setProperty(cs[i], cs.getPropertyValue(cs[i])); };
+  cp(node, clone); for (let i = 0; i < srcEls.length; i++) cp(srcEls[i], clnEls[i] as HTMLElement);
   clone.style.margin = "0";
   const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}"><foreignObject width="100%" height="100%"><div xmlns="http://www.w3.org/1999/xhtml">${clone.outerHTML}</div></foreignObject></svg>`;
   const canvas = Object.assign(document.createElement("canvas"), { width: w * scale, height: h * scale });
-  const ctx = canvas.getContext("2d"); ctx.scale(scale, scale);
+  const ctx = canvas.getContext("2d")!; ctx.scale(scale, scale);
   return new Promise((ok, fail) => {
     const img = new Image();
     img.onload = () => { ctx.drawImage(img, 0, 0); canvas.toBlob(b => b ? ok(b) : fail(), "image/png"); };
@@ -71,20 +84,23 @@ export default function DoujinInfoBuilder() {
 
   const [info, setInfo] = useState({ eventName: "", date: "", hours: "", boothLocation: "", boothName: "", nickname: "", sns: "" });
   const [boothNote, setBoothNote] = useState("");
+  const [textBadge, setTextBadge] = useState("");
+  const [hasR15, setHasR15] = useState(false);
+  const [hasR18, setHasR18] = useState(false);
   const [items, setItems] = useState(() => Array.from({ length: 4 }, makeItem));
 
-  const set = (k, v) => setInfo(p => ({ ...p, [k]: v }));
-  const setI = (i, k, v) => setItems(p => p.map((x, j) => j === i ? { ...x, [k]: v } : x));
+  const set = (k: keyof typeof info, v: string) => setInfo(p => ({ ...p, [k]: v }));
+  const setI = (i: number, k: keyof typeof items[0], v: string | null) => setItems(p => p.map((x, j) => j === i ? { ...x, [k]: v } : x));
 
-  const handleImg = (idx, e) => {
+  const handleImg = (idx: number, e: React.ChangeEvent<HTMLInputElement>) => {
     const f = e.target.files?.[0];
     if (!f) return;
     const r = new FileReader();
-    r.onload = ev => setI(idx, "image", ev.target.result);
+    r.onload = ev => setI(idx, "image", ev.target?.result as string);
     r.readAsDataURL(f);
   };
 
-  const changeGrid = g => {
+  const changeGrid = (g: typeof GRIDS[0]) => {
     setGrid(g);
     setItems(p => p.length >= g.count ? p.slice(0, g.count) : [...p, ...Array.from({ length: g.count - p.length }, makeItem)]);
   };
@@ -93,11 +109,11 @@ export default function DoujinInfoBuilder() {
     if (!cardRef.current || saving) return;
     setSaving(true);
     try {
-      let blob;
+      let blob: Blob;
       try {
-        const m = await import("https://esm.sh/html-to-image@1.11.11");
-        blob = await (await fetch(await m.toPng(cardRef.current, { pixelRatio: 2, cacheBust: true, skipFonts: true }))).blob();
-      } catch { blob = await capturePng(cardRef.current, 2); }
+        const dataUrl = await toPng(cardRef.current, { pixelRatio: 2, cacheBust: true, skipFonts: true });
+        blob = await (await fetch(dataUrl)).blob();
+      } catch { blob = await capturePng(cardRef.current, 2) as Blob; }
       const a = Object.assign(document.createElement("a"), { href: URL.createObjectURL(blob), download: `${info.boothName || "info"}.png` });
       a.click(); URL.revokeObjectURL(a.href);
     } catch { alert("이미지 저장 실패. 스크린샷을 이용해주세요."); }
@@ -112,8 +128,8 @@ export default function DoujinInfoBuilder() {
     border: `1px solid ${c.border}`, background: c.card, color: c.text,
     fontSize: 14, fontFamily: FONT, outline: "none", transition: "border-color .2s",
   };
-  const fc = e => { e.target.style.borderColor = c.accent; };
-  const bl = e => { e.target.style.borderColor = c.border; };
+  const fc = (e: React.FocusEvent<HTMLInputElement | HTMLTextAreaElement>) => { (e.target as HTMLElement).style.borderColor = c.accent; };
+  const bl = (e: React.FocusEvent<HTMLInputElement | HTMLTextAreaElement>) => { (e.target as HTMLElement).style.borderColor = c.border; };
   const lbl = { fontSize: 11, fontWeight: 600, color: c.sub, letterSpacing: ".04em", marginBottom: 3, display: "block" };
   const sec = { fontSize: 12, fontWeight: 700, color: c.sub, letterSpacing: ".06em", textTransform: "uppercase", marginBottom: 10 };
 
@@ -185,10 +201,10 @@ export default function DoujinInfoBuilder() {
             <div style={{ display: "flex", gap: 6 }}>
               {[
                 [false, "간단 보기"],
-                [true, "물품 상세 정보"],
+                [true, "상세 보기"],
               ].map(([val, label]) => {
                 const on = detail === val;
-                return <button key={String(val)} onClick={() => setDetail(val)} style={{
+                return <button key={String(val)} onClick={() => setDetail(val as boolean)} style={{
                   flex: 1, padding: "8px 0", borderRadius: 10, cursor: "pointer", fontFamily: FONT,
                   border: on ? `2px solid ${c.accent}` : `1.5px solid ${c.border}`,
                   background: on ? `${c.accent}12` : c.card, color: on ? c.accent : c.sub,
@@ -205,20 +221,73 @@ export default function DoujinInfoBuilder() {
           <div style={{ marginBottom: 22 }}>
             <div style={sec}>Event Info</div>
             <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-              {[
-                ["eventName", "행사명", "서울코믹월드"],
-                ["date", "일시", "2026.04.05 (일)"],
-                ["hours", "운영시간", "11:00 – 16:00"],
-                ["boothLocation", "부스 위치", "A홀 23번"],
-                ["boothName", "부스명(서클명)", "달빛서재"],
-                ["nickname", "닉네임", "하늘"],
-                ["sns", "SNS", "@sky_draw"],
-              ].map(([k, label, ph]) => (
-                <div key={k}>
-                  <label style={lbl}>{label}</label>
-                  <CInput value={info[k]} onChange={v => set(k, v)} placeholder={ph} style={inp} onFocus={fc} onBlur={bl} />
+              {/* 행사명 */}
+              <div>
+                <label style={lbl}>행사명</label>
+                <CInput value={info.eventName} onChange={v => set("eventName", v)} placeholder="서울코믹월드" style={inp as React.CSSProperties} onFocus={fc} onBlur={bl} />
+              </div>
+              {/* 일시와 운영시간 */}
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+                <div>
+                  <label style={lbl}>일시</label>
+                  <CInput value={info.date} onChange={v => set("date", v)} placeholder="2026.04.05 (일)" style={inp as React.CSSProperties} onFocus={fc} onBlur={bl} />
                 </div>
-              ))}
+                <div>
+                  <label style={lbl}>운영시간</label>
+                  <CInput value={info.hours} onChange={v => set("hours", v)} placeholder="11:00 – 16:00" style={inp as React.CSSProperties} onFocus={fc} onBlur={bl} />
+                </div>
+              </div>
+              {/* 부스 위치와 서클명 */}
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+                <div>
+                  <label style={lbl}>부스 위치</label>
+                  <CInput value={info.boothLocation} onChange={v => set("boothLocation", v)} placeholder="A홀 23번" style={inp as React.CSSProperties} onFocus={fc} onBlur={bl} />
+                </div>
+                <div>
+                  <label style={lbl}>부스명(서클명)</label>
+                  <CInput value={info.boothName} onChange={v => set("boothName", v)} placeholder="달빛서재" style={inp as React.CSSProperties} onFocus={fc} onBlur={bl} />
+                </div>
+              </div>
+              {/* 닉네임과 SNS */}
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+                <div>
+                  <label style={lbl}>닉네임</label>
+                  <CInput value={info.nickname} onChange={v => set("nickname", v)} placeholder="하늘" style={inp as React.CSSProperties} onFocus={fc} onBlur={bl} />
+                </div>
+                <div>
+                  <label style={lbl}>SNS</label>
+                  <CInput value={info.sns} onChange={v => set("sns", v)} placeholder="@sky_draw" style={inp as React.CSSProperties} onFocus={fc} onBlur={bl} />
+                </div>
+              </div>
+              {/* Rating badges */}
+              <div>
+                <label style={lbl}>등급 뱃지</label>
+                <div style={{ display: "flex", gap: 12 }}>
+                  <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer", userSelect: "none" }}>
+                    <input
+                      type="checkbox"
+                      checked={hasR15}
+                      onChange={e => setHasR15(e.target.checked)}
+                      style={{ width: 18, height: 18, cursor: "pointer", accentColor: "#FF9500" }}
+                    />
+                    <span style={{ fontSize: 13, fontWeight: 600, color: c.text }}>R15 (주황)</span>
+                  </label>
+                  <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer", userSelect: "none" }}>
+                    <input
+                      type="checkbox"
+                      checked={hasR18}
+                      onChange={e => setHasR18(e.target.checked)}
+                      style={{ width: 18, height: 18, cursor: "pointer", accentColor: "#FF3333" }}
+                    />
+                    <span style={{ fontSize: 13, fontWeight: 600, color: c.text }}>R18 (빨강)</span>
+                  </label>
+                </div>
+              </div>
+              {/* Text badge */}
+              <div>
+                <label style={lbl}>추가 텍스트 뱃지</label>
+                <CInput value={textBadge} onChange={setTextBadge} placeholder="예: 소량, 극소량, 현판 ONLY" style={inp as React.CSSProperties} onFocus={fc} onBlur={bl} />
+              </div>
             </div>
           </div>
 
@@ -227,7 +296,7 @@ export default function DoujinInfoBuilder() {
             <div style={sec}>부스 주의사항</div>
             <CInput multiline value={boothNote} onChange={setBoothNote}
               placeholder="예: 현금 / 계좌이체만 가능합니다.&#10;파본은 인쇄소 규정을 따릅니다." rows={3}
-              style={{ ...inp, resize: "vertical", lineHeight: 1.6 }} onFocus={fc} onBlur={bl} />
+              style={{ ...inp, resize: "vertical", lineHeight: 1.6 } as React.CSSProperties} onFocus={fc} onBlur={bl} />
           </div>
 
           {/* Items */}
@@ -267,38 +336,13 @@ export default function DoujinInfoBuilder() {
                   </div>
 
                   <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                    <CInput value={item.title} onChange={v => setI(idx, "title", v)} placeholder="제목" style={inp} onFocus={fc} onBlur={bl} />
-                    <CInput value={item.spec} onChange={v => setI(idx, "spec", v)} placeholder="규격 (예: A5 / 40p)" style={inp} onFocus={fc} onBlur={bl} />
-                    <CInput value={item.price} onChange={v => setI(idx, "price", v)} placeholder="가격 (예: 8,000원)" style={inp} onFocus={fc} onBlur={bl} />
-
-                    {/* Badges */}
-                    <div>
-                      <label style={lbl}>뱃지</label>
-                      <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
-                        {/* R15 */}
-                        <label style={{ display: "flex", alignItems: "center", gap: 5, cursor: "pointer", fontSize: 13, fontWeight: 600, color: item.r15 ? "#e67e00" : c.sub }}>
-                          <input type="checkbox" checked={item.r15} onChange={e => { setI(idx, "r15", e.target.checked); if (e.target.checked) setI(idx, "r18", false); }}
-                            style={{ width: 16, height: 16, accentColor: "#e67e00" }} />
-                          R15
-                        </label>
-                        {/* R18 */}
-                        <label style={{ display: "flex", alignItems: "center", gap: 5, cursor: "pointer", fontSize: 13, fontWeight: 600, color: item.r18 ? "#dc2626" : c.sub }}>
-                          <input type="checkbox" checked={item.r18} onChange={e => { setI(idx, "r18", e.target.checked); if (e.target.checked) setI(idx, "r15", false); }}
-                            style={{ width: 16, height: 16, accentColor: "#dc2626" }} />
-                          R18
-                        </label>
-                        {/* Custom text badge */}
-                        <CInput value={item.badgeText} onChange={v => setI(idx, "badgeText", v)}
-                          placeholder="소량 / 극소량 / 현판 ONLY…"
-                          style={{ ...inp, flex: 1, minWidth: 120, padding: "6px 10px", fontSize: 12 }}
-                          onFocus={fc} onBlur={bl} />
-                      </div>
-                    </div>
-
+                    <CInput value={item.title} onChange={v => setI(idx, "title", v)} placeholder="제목" style={inp as React.CSSProperties} onFocus={fc} onBlur={bl} />
+                    <CInput value={item.spec} onChange={v => setI(idx, "spec", v)} placeholder="규격 (예: A5 / 40p)" style={inp as React.CSSProperties} onFocus={fc} onBlur={bl} />
+                    <CInput value={item.price} onChange={v => setI(idx, "price", v)} placeholder="가격 (예: 8,000원)" style={inp as React.CSSProperties} onFocus={fc} onBlur={bl} />
                     {detail && (
                       <CInput multiline value={item.synopsis} onChange={v => setI(idx, "synopsis", v)}
                         placeholder="시놉시스 / 상세 설명" rows={3}
-                        style={{ ...inp, resize: "vertical", lineHeight: 1.6 }} onFocus={fc} onBlur={bl} />
+                        style={{ ...inp, resize: "vertical", lineHeight: 1.6 } as React.CSSProperties} onFocus={fc} onBlur={bl} />
                     )}
                   </div>
                 </div>
@@ -327,6 +371,36 @@ export default function DoujinInfoBuilder() {
                   <div style={{ fontSize: 26, fontWeight: 900, letterSpacing: "-.02em", lineHeight: 1.1 }}>{info.boothLocation}</div>
                 </div>
               )}
+              {/* Rating badges */}
+              <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "flex-start" }}>
+                {hasR15 && (
+                  <div style={{
+                    background: "#FF9500", color: "#fff",
+                    padding: "10px 16px", borderRadius: 6, flexShrink: 0, textAlign: "center",
+                    border: `2px solid #FF9500`, minWidth: 50,
+                  }}>
+                    <div style={{ fontSize: 12, fontWeight: 900, letterSpacing: "-.02em", lineHeight: 1.1 }}>R15</div>
+                  </div>
+                )}
+                {hasR18 && (
+                  <div style={{
+                    background: "#FF3333", color: "#fff",
+                    padding: "10px 16px", borderRadius: 6, flexShrink: 0, textAlign: "center",
+                    border: `2px solid #FF3333`, minWidth: 50,
+                  }}>
+                    <div style={{ fontSize: 12, fontWeight: 900, letterSpacing: "-.02em", lineHeight: 1.1 }}>R18</div>
+                  </div>
+                )}
+                {textBadge && (
+                  <div style={{
+                    background: c.accent2, color: "#fff",
+                    padding: "10px 16px", borderRadius: 6, flexShrink: 0, textAlign: "center",
+                    border: `2px solid ${c.accent2}`,
+                  }}>
+                    <div style={{ fontSize: 12, fontWeight: 900, letterSpacing: "-.02em", lineHeight: 1.1, whiteSpace: "nowrap" }}>{textBadge}</div>
+                  </div>
+                )}
+              </div>
               <div style={{ flex: 1, minWidth: 150 }}>
                 {info.eventName && <div style={{ fontSize: 11, fontWeight: 600, color: c.sub, letterSpacing: ".04em", marginBottom: 4 }}>{info.eventName}</div>}
                 {info.boothName && <div style={{ fontSize: 30, fontWeight: 900, color: c.text, letterSpacing: "-.02em", lineHeight: 1.15, wordBreak: "keep-all" }}>{info.boothName}</div>}
@@ -378,14 +452,6 @@ export default function DoujinInfoBuilder() {
                       }
                     </div>
                     <div style={{ padding: "10px 12px 12px" }}>
-                      {/* Badges */}
-                      {(it.r15 || it.r18 || it.badgeText) && (
-                        <div style={{ display: "flex", gap: 4, flexWrap: "wrap", marginBottom: 6 }}>
-                          {it.r15 && <span style={{ padding: "2px 8px", borderRadius: 3, background: "#e67e00", color: "#fff", fontSize: 10, fontWeight: 800 }}>R15</span>}
-                          {it.r18 && <span style={{ padding: "2px 8px", borderRadius: 3, background: "#dc2626", color: "#fff", fontSize: 10, fontWeight: 800 }}>R18</span>}
-                          {it.badgeText && <span style={{ padding: "2px 8px", borderRadius: 3, background: c.accent, color: c.badgeText, fontSize: 10, fontWeight: 700 }}>{it.badgeText}</span>}
-                        </div>
-                      )}
                       {it.title && <div style={{ fontSize: 14, fontWeight: 800, color: c.text, lineHeight: 1.3, marginBottom: 3, wordBreak: "keep-all" }}>{it.title}</div>}
                       {it.spec && <div style={{ fontSize: 11, color: c.sub, marginBottom: 4 }}>{it.spec}</div>}
                       {it.price && (
@@ -420,14 +486,6 @@ export default function DoujinInfoBuilder() {
                     </div>
                     {/* Right: info */}
                     <div style={{ flex: 1, padding: "14px 16px", display: "flex", flexDirection: "column", justifyContent: "center", gap: 4 }}>
-                      {/* Badges */}
-                      {(it.r15 || it.r18 || it.badgeText) && (
-                        <div style={{ display: "flex", gap: 4, flexWrap: "wrap" }}>
-                          {it.r15 && <span style={{ padding: "2px 8px", borderRadius: 3, background: "#e67e00", color: "#fff", fontSize: 10, fontWeight: 800 }}>R15</span>}
-                          {it.r18 && <span style={{ padding: "2px 8px", borderRadius: 3, background: "#dc2626", color: "#fff", fontSize: 10, fontWeight: 800 }}>R18</span>}
-                          {it.badgeText && <span style={{ padding: "2px 8px", borderRadius: 3, background: c.accent, color: c.badgeText, fontSize: 10, fontWeight: 700 }}>{it.badgeText}</span>}
-                        </div>
-                      )}
                       {it.title && <div style={{ fontSize: 16, fontWeight: 800, color: c.text, lineHeight: 1.3, wordBreak: "keep-all" }}>{it.title}</div>}
                       {it.spec && <div style={{ fontSize: 12, color: c.sub }}>{it.spec}</div>}
                       {it.price && (
