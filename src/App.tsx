@@ -23,7 +23,7 @@ const GRIDS = [
 ];
 
 const uid = () => `${Date.now()}-${Math.random().toString(36).slice(2)}`;
-const makeItem = () => ({ id: uid(), image: null, title: "", spec: "", price: "", synopsis: "" });
+const makeItem = () => ({ id: uid(), image: null, title: "", spec: "", price: "", synopsis: "", rating: "none" });
 
 /* ── IME-safe input ── */
 function CInput({ value, onChange, multiline, style, ...rest }: {
@@ -84,9 +84,6 @@ export default function DoujinInfoBuilder() {
 
   const [info, setInfo] = useState({ eventName: "", date: "", hours: "", boothLocation: "", boothName: "", nickname: "", sns: "" });
   const [boothNote, setBoothNote] = useState("");
-  const [textBadge, setTextBadge] = useState("");
-  const [hasR15, setHasR15] = useState(false);
-  const [hasR18, setHasR18] = useState(false);
   const [items, setItems] = useState(() => Array.from({ length: 4 }, makeItem));
 
   const set = (k: keyof typeof info, v: string) => setInfo(p => ({ ...p, [k]: v }));
@@ -259,35 +256,6 @@ export default function DoujinInfoBuilder() {
                   <CInput value={info.sns} onChange={v => set("sns", v)} placeholder="@sky_draw" style={inp as React.CSSProperties} onFocus={fc} onBlur={bl} />
                 </div>
               </div>
-              {/* Rating badges */}
-              <div>
-                <label style={lbl}>등급 뱃지</label>
-                <div style={{ display: "flex", gap: 12 }}>
-                  <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer", userSelect: "none" }}>
-                    <input
-                      type="checkbox"
-                      checked={hasR15}
-                      onChange={e => setHasR15(e.target.checked)}
-                      style={{ width: 18, height: 18, cursor: "pointer", accentColor: "#FF9500" }}
-                    />
-                    <span style={{ fontSize: 13, fontWeight: 600, color: c.text }}>R15 (주황)</span>
-                  </label>
-                  <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer", userSelect: "none" }}>
-                    <input
-                      type="checkbox"
-                      checked={hasR18}
-                      onChange={e => setHasR18(e.target.checked)}
-                      style={{ width: 18, height: 18, cursor: "pointer", accentColor: "#FF3333" }}
-                    />
-                    <span style={{ fontSize: 13, fontWeight: 600, color: c.text }}>R18 (빨강)</span>
-                  </label>
-                </div>
-              </div>
-              {/* Text badge */}
-              <div>
-                <label style={lbl}>추가 텍스트 뱃지</label>
-                <CInput value={textBadge} onChange={setTextBadge} placeholder="예: 소량, 극소량, 현판 ONLY" style={inp as React.CSSProperties} onFocus={fc} onBlur={bl} />
-              </div>
             </div>
           </div>
 
@@ -335,6 +303,25 @@ export default function DoujinInfoBuilder() {
                     )}
                   </div>
 
+                  {/* Rating selector */}
+                  <div style={{ marginBottom: 10, display: "flex", gap: 10, alignItems: "center" }}>
+                    <label style={{ fontSize: 11, fontWeight: 600, color: c.sub, letterSpacing: ".04em" }}>등급:</label>
+                    {["none", "R15", "R18"].map(val => (
+                      <label key={val} style={{ display: "flex", alignItems: "center", gap: 5, cursor: "pointer", userSelect: "none" }}>
+                        <input
+                          type="radio"
+                          name={`rating-${item.id}`}
+                          checked={item.rating === val}
+                          onChange={() => setI(idx, "rating", val)}
+                          style={{ cursor: "pointer" }}
+                        />
+                        <span style={{ fontSize: 12, fontWeight: 500, color: c.text }}>
+                          {val === "none" ? "없음" : val}
+                        </span>
+                      </label>
+                    ))}
+                  </div>
+
                   <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
                     <CInput value={item.title} onChange={v => setI(idx, "title", v)} placeholder="제목" style={inp as React.CSSProperties} onFocus={fc} onBlur={bl} />
                     <CInput value={item.spec} onChange={v => setI(idx, "spec", v)} placeholder="규격 (예: A5 / 40p)" style={inp as React.CSSProperties} onFocus={fc} onBlur={bl} />
@@ -371,36 +358,6 @@ export default function DoujinInfoBuilder() {
                   <div style={{ fontSize: 26, fontWeight: 900, letterSpacing: "-.02em", lineHeight: 1.1 }}>{info.boothLocation}</div>
                 </div>
               )}
-              {/* Rating badges */}
-              <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "flex-start" }}>
-                {hasR15 && (
-                  <div style={{
-                    background: "#FF9500", color: "#fff",
-                    padding: "10px 16px", borderRadius: 6, flexShrink: 0, textAlign: "center",
-                    border: `2px solid #FF9500`, minWidth: 50,
-                  }}>
-                    <div style={{ fontSize: 12, fontWeight: 900, letterSpacing: "-.02em", lineHeight: 1.1 }}>R15</div>
-                  </div>
-                )}
-                {hasR18 && (
-                  <div style={{
-                    background: "#FF3333", color: "#fff",
-                    padding: "10px 16px", borderRadius: 6, flexShrink: 0, textAlign: "center",
-                    border: `2px solid #FF3333`, minWidth: 50,
-                  }}>
-                    <div style={{ fontSize: 12, fontWeight: 900, letterSpacing: "-.02em", lineHeight: 1.1 }}>R18</div>
-                  </div>
-                )}
-                {textBadge && (
-                  <div style={{
-                    background: c.accent2, color: "#fff",
-                    padding: "10px 16px", borderRadius: 6, flexShrink: 0, textAlign: "center",
-                    border: `2px solid ${c.accent2}`,
-                  }}>
-                    <div style={{ fontSize: 12, fontWeight: 900, letterSpacing: "-.02em", lineHeight: 1.1, whiteSpace: "nowrap" }}>{textBadge}</div>
-                  </div>
-                )}
-              </div>
               <div style={{ flex: 1, minWidth: 150 }}>
                 {info.eventName && <div style={{ fontSize: 11, fontWeight: 600, color: c.sub, letterSpacing: ".04em", marginBottom: 4 }}>{info.eventName}</div>}
                 {info.boothName && <div style={{ fontSize: 30, fontWeight: 900, color: c.text, letterSpacing: "-.02em", lineHeight: 1.15, wordBreak: "keep-all" }}>{info.boothName}</div>}
@@ -452,6 +409,21 @@ export default function DoujinInfoBuilder() {
                       }
                     </div>
                     <div style={{ padding: "10px 12px 12px" }}>
+                      {it.rating !== "none" && (
+                        <div style={{
+                          display: "inline-block",
+                          padding: "4px 8px",
+                          borderRadius: 3,
+                          background: it.rating === "R15" ? "#FF9500" : "#FF3333",
+                          color: "#fff",
+                          fontSize: 10,
+                          fontWeight: 800,
+                          marginBottom: 4,
+                          lineHeight: 1,
+                        }}>
+                          {it.rating}
+                        </div>
+                      )}
                       {it.title && <div style={{ fontSize: 14, fontWeight: 800, color: c.text, lineHeight: 1.3, marginBottom: 3, wordBreak: "keep-all" }}>{it.title}</div>}
                       {it.spec && <div style={{ fontSize: 11, color: c.sub, marginBottom: 4 }}>{it.spec}</div>}
                       {it.price && (
@@ -486,6 +458,22 @@ export default function DoujinInfoBuilder() {
                     </div>
                     {/* Right: info */}
                     <div style={{ flex: 1, padding: "14px 16px", display: "flex", flexDirection: "column", justifyContent: "center", gap: 4 }}>
+                      {it.rating !== "none" && (
+                        <div style={{
+                          display: "inline-block",
+                          padding: "4px 8px",
+                          borderRadius: 3,
+                          background: it.rating === "R15" ? "#FF9500" : "#FF3333",
+                          color: "#fff",
+                          fontSize: 10,
+                          fontWeight: 800,
+                          marginBottom: 2,
+                          lineHeight: 1,
+                          width: "fit-content",
+                        }}>
+                          {it.rating}
+                        </div>
+                      )}
                       {it.title && <div style={{ fontSize: 16, fontWeight: 800, color: c.text, lineHeight: 1.3, wordBreak: "keep-all" }}>{it.title}</div>}
                       {it.spec && <div style={{ fontSize: 12, color: c.sub }}>{it.spec}</div>}
                       {it.price && (
