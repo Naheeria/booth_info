@@ -407,8 +407,8 @@ export default function DoujinInfoBuilder() {
                   padding: "10px 16px", borderRadius: 6, flexShrink: 0, textAlign: "center",
                   border: `2px solid ${c.accent}`, minWidth: 60,
                 }}>
-                  <div style={{ fontSize: 10, fontWeight: 600, opacity: .7, letterSpacing: ".06em" }}>부스위치</div>
-                  <div style={{ fontSize: 26, fontWeight: 900, letterSpacing: "-.02em", lineHeight: 1.1 }}>{info.boothLocation}</div>
+                  <div style={{ fontSize: 10, fontWeight: 600, opacity: .7, letterSpacing: ".06em", whiteSpace: "nowrap" }}>부스위치</div>
+                  <div style={{ fontSize: 26, fontWeight: 900, letterSpacing: "-.02em", lineHeight: 1.1, whiteSpace: "nowrap" }}>{info.boothLocation}</div>
                 </div>
               )}
               <div style={{ flex: 1, minWidth: 0 }}>
@@ -458,39 +458,40 @@ export default function DoujinInfoBuilder() {
                     }}>
                       {it.image
                         ? <img src={it.image} alt="" style={{ width: "100%", height: "100%", objectFit: "contain", display: "block" }} />
-                        : <span style={{ opacity: .35 }}>이미지 없음</span>
+                        : <span style={{ opacity: .35, whiteSpace: "nowrap" }}>이미지 없음</span>
                       }
                     </div>
                     <div style={{ padding: "10px 12px 12px" }}>
-                      {it.rating !== "none" && (
-                        <div style={{
-                          display: "inline-block",
-                          padding: "4px 8px",
-                          borderRadius: 3,
-                          background: it.rating === "R15" ? "#FF9500" : "#FF3333",
-                          color: "#fff",
-                          fontSize: 10,
-                          fontWeight: 800,
-                          marginRight: 4,
-                          marginBottom: 4,
-                          lineHeight: 1,
-                        }}>
-                          {it.rating}
-                        </div>
-                      )}
-                      {it.customText && (
-                        <div style={{
-                          display: "inline-block",
-                          padding: "4px 8px",
-                          borderRadius: 3,
-                          background: c.accent2,
-                          color: "#fff",
-                          fontSize: 10,
-                          fontWeight: 800,
-                          marginBottom: 4,
-                          lineHeight: 1,
-                        }}>
-                          {it.customText}
+                      {(it.rating !== "none" || it.customText) && (
+                        <div style={{ display: "flex", flexWrap: "wrap", gap: 4, marginBottom: 6, alignItems: "center" }}>
+                          {it.rating !== "none" && (
+                            <span style={{
+                              padding: "3px 7px",
+                              borderRadius: 3,
+                              background: it.rating === "R15" ? "#FF9500" : "#FF3333",
+                              color: "#fff",
+                              fontSize: 10,
+                              fontWeight: 800,
+                              lineHeight: 1,
+                              whiteSpace: "nowrap",
+                            }}>
+                              {it.rating}
+                            </span>
+                          )}
+                          {it.customText && (
+                            <span style={{
+                              padding: "3px 7px",
+                              borderRadius: 3,
+                              background: c.accent2,
+                              color: "#fff",
+                              fontSize: 10,
+                              fontWeight: 800,
+                              lineHeight: 1,
+                              whiteSpace: "nowrap",
+                            }}>
+                              {it.customText}
+                            </span>
+                          )}
                         </div>
                       )}
                       {it.title && <div style={{ fontSize: 14, fontWeight: 800, color: c.text, lineHeight: 1.3, marginBottom: 3, wordBreak: "keep-all", overflowWrap: "break-word" }}>{it.title}</div>}
@@ -522,42 +523,41 @@ export default function DoujinInfoBuilder() {
                     }}>
                       {it.image
                         ? <img src={it.image} alt="" style={{ width: "100%", height: "100%", objectFit: "contain", display: "block" }} />
-                        : <span style={{ opacity: .35 }}>이미지 없음</span>
+                        : <span style={{ opacity: .35, whiteSpace: "nowrap" }}>이미지 없음</span>
                       }
                     </div>
                     {/* Right: info */}
                     <div style={{ flex: 1, minWidth: 0, padding: "14px 16px", display: "flex", flexDirection: "column", justifyContent: "center", gap: 4 }}>
-                      {it.rating !== "none" && (
-                        <div style={{
-                          display: "inline-block",
-                          padding: "4px 8px",
-                          borderRadius: 3,
-                          background: it.rating === "R15" ? "#FF9500" : "#FF3333",
-                          color: "#fff",
-                          fontSize: 10,
-                          fontWeight: 800,
-                          marginBottom: 2,
-                          marginRight: 4,
-                          lineHeight: 1,
-                          width: "fit-content",
-                        }}>
-                          {it.rating}
-                        </div>
-                      )}
-                      {it.customText && (
-                        <div style={{
-                          display: "inline-block",
-                          padding: "4px 8px",
-                          borderRadius: 3,
-                          background: c.accent2,
-                          color: "#fff",
-                          fontSize: 10,
-                          fontWeight: 800,
-                          marginBottom: 2,
-                          lineHeight: 1,
-                          width: "fit-content",
-                        }}>
-                          {it.customText}
+                      {(it.rating !== "none" || it.customText) && (
+                        <div style={{ display: "flex", flexWrap: "wrap", gap: 4, alignItems: "center" }}>
+                          {it.rating !== "none" && (
+                            <span style={{
+                              padding: "3px 7px",
+                              borderRadius: 3,
+                              background: it.rating === "R15" ? "#FF9500" : "#FF3333",
+                              color: "#fff",
+                              fontSize: 10,
+                              fontWeight: 800,
+                              lineHeight: 1,
+                              whiteSpace: "nowrap",
+                            }}>
+                              {it.rating}
+                            </span>
+                          )}
+                          {it.customText && (
+                            <span style={{
+                              padding: "3px 7px",
+                              borderRadius: 3,
+                              background: c.accent2,
+                              color: "#fff",
+                              fontSize: 10,
+                              fontWeight: 800,
+                              lineHeight: 1,
+                              whiteSpace: "nowrap",
+                            }}>
+                              {it.customText}
+                            </span>
+                          )}
                         </div>
                       )}
                       {it.title && <div style={{ fontSize: 16, fontWeight: 800, color: c.text, lineHeight: 1.3, wordBreak: "keep-all", overflowWrap: "break-word" }}>{it.title}</div>}
@@ -586,7 +586,7 @@ export default function DoujinInfoBuilder() {
               display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8,
             }}>
               <div style={{ fontSize: 10, color: c.sub, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{info.boothName || ""}{info.sns ? ` · ${info.sns}` : ""}</div>
-              <div style={{ fontSize: 10, color: c.sub, flexShrink: 0 }}>{info.eventName || ""}</div>
+              <div style={{ fontSize: 10, color: c.sub, flexShrink: 0, whiteSpace: "nowrap" }}>{info.eventName || ""}</div>
             </div>
           </div>
 
