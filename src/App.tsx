@@ -411,9 +411,9 @@ export default function DoujinInfoBuilder() {
                   <div style={{ fontSize: 26, fontWeight: 900, letterSpacing: "-.02em", lineHeight: 1.1 }}>{info.boothLocation}</div>
                 </div>
               )}
-              <div style={{ flex: 1, minWidth: 150 }}>
-                {info.eventName && <div style={{ fontSize: 11, fontWeight: 600, color: c.sub, letterSpacing: ".04em", marginBottom: 4 }}>{info.eventName}</div>}
-                {info.boothName && <div style={{ fontSize: 30, fontWeight: 900, color: c.text, letterSpacing: "-.02em", lineHeight: 1.15, wordBreak: "keep-all" }}>{info.boothName}</div>}
+              <div style={{ flex: 1, minWidth: 0 }}>
+                {info.eventName && <div style={{ fontSize: 11, fontWeight: 600, color: c.sub, letterSpacing: ".04em", marginBottom: 4, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{info.eventName}</div>}
+                {info.boothName && <div style={{ fontSize: 30, fontWeight: 900, color: c.text, letterSpacing: "-.02em", lineHeight: 1.15, wordBreak: "keep-all", overflowWrap: "break-word" }}>{info.boothName}</div>}
                 {(info.nickname || info.sns) && (
                   <div style={{ fontSize: 13, color: c.sub, marginTop: 4, fontWeight: 500 }}>
                     {info.nickname}{info.sns && <span style={{ marginLeft: 6, color: c.accent2 }}>{info.sns}</span>}
@@ -493,10 +493,10 @@ export default function DoujinInfoBuilder() {
                           {it.customText}
                         </div>
                       )}
-                      {it.title && <div style={{ fontSize: 14, fontWeight: 800, color: c.text, lineHeight: 1.3, marginBottom: 3, wordBreak: "keep-all" }}>{it.title}</div>}
-                      {it.spec && <div style={{ fontSize: 11, color: c.sub, marginBottom: 4 }}>{it.spec}</div>}
+                      {it.title && <div style={{ fontSize: 14, fontWeight: 800, color: c.text, lineHeight: 1.3, marginBottom: 3, wordBreak: "keep-all", overflowWrap: "break-word" }}>{it.title}</div>}
+                      {it.spec && <div style={{ fontSize: 11, color: c.sub, marginBottom: 4, wordBreak: "keep-all", overflowWrap: "break-word" }}>{it.spec}</div>}
                       {it.price && (
-                        <div style={{ display: "inline-block", padding: "3px 10px", borderRadius: 4, background: c.accent2, color: "#fff", fontSize: 14, fontWeight: 800 }}>{it.price}</div>
+                        <div style={{ display: "inline-block", maxWidth: "100%", padding: "3px 10px", borderRadius: 4, background: c.accent2, color: "#fff", fontSize: 14, fontWeight: 800, wordBreak: "break-all" }}>{it.price}</div>
                       )}
                     </div>
                   </div>
@@ -526,7 +526,7 @@ export default function DoujinInfoBuilder() {
                       }
                     </div>
                     {/* Right: info */}
-                    <div style={{ flex: 1, padding: "14px 16px", display: "flex", flexDirection: "column", justifyContent: "center", gap: 4 }}>
+                    <div style={{ flex: 1, minWidth: 0, padding: "14px 16px", display: "flex", flexDirection: "column", justifyContent: "center", gap: 4 }}>
                       {it.rating !== "none" && (
                         <div style={{
                           display: "inline-block",
@@ -560,8 +560,8 @@ export default function DoujinInfoBuilder() {
                           {it.customText}
                         </div>
                       )}
-                      {it.title && <div style={{ fontSize: 16, fontWeight: 800, color: c.text, lineHeight: 1.3, wordBreak: "keep-all" }}>{it.title}</div>}
-                      {it.spec && <div style={{ fontSize: 12, color: c.sub }}>{it.spec}</div>}
+                      {it.title && <div style={{ fontSize: 16, fontWeight: 800, color: c.text, lineHeight: 1.3, wordBreak: "keep-all", overflowWrap: "break-word" }}>{it.title}</div>}
+                      {it.spec && <div style={{ fontSize: 12, color: c.sub, wordBreak: "keep-all", overflowWrap: "break-word" }}>{it.spec}</div>}
                       {it.price && (
                         <div style={{ marginTop: 2 }}>
                           <span style={{ display: "inline-block", padding: "3px 12px", borderRadius: 4, background: c.accent2, color: "#fff", fontSize: 15, fontWeight: 800 }}>{it.price}</span>
@@ -583,10 +583,10 @@ export default function DoujinInfoBuilder() {
             {/* Footer */}
             <div style={{
               padding: "10px 20px 14px", borderTop: `1px solid ${c.border}`,
-              display: "flex", justifyContent: "space-between", alignItems: "center",
+              display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8,
             }}>
-              <div style={{ fontSize: 10, color: c.sub }}>{info.boothName || ""}{info.sns ? ` · ${info.sns}` : ""}</div>
-              <div style={{ fontSize: 10, color: c.sub }}>{info.eventName || ""}</div>
+              <div style={{ fontSize: 10, color: c.sub, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{info.boothName || ""}{info.sns ? ` · ${info.sns}` : ""}</div>
+              <div style={{ fontSize: 10, color: c.sub, flexShrink: 0 }}>{info.eventName || ""}</div>
             </div>
           </div>
 
