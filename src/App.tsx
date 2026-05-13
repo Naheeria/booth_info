@@ -1,6 +1,5 @@
 import { useState, useRef } from "react";
-// @ts-expect-error ESM import from CDN which TypeScript does not recognize
-import { toPng } from "https://esm.sh/html-to-image@1.11.11";
+import { toPng } from "html-to-image";
 
 const FONT = "'Pretendard Variable','Noto Sans KR',-apple-system,BlinkMacSystemFont,system-ui,sans-serif";
 
@@ -118,7 +117,7 @@ export default function DoujinInfoBuilder() {
   const getBlob = async (): Promise<Blob> => {
     if (!cardRef.current) throw new Error();
     try {
-      const dataUrl = await toPng(cardRef.current, { pixelRatio: 2, cacheBust: true, skipFonts: true });
+      const dataUrl = await toPng(cardRef.current, { pixelRatio: 2, cacheBust: true });
       return await (await fetch(dataUrl)).blob();
     } catch {
       return await capturePng(cardRef.current, 2) as Blob;
@@ -131,7 +130,8 @@ export default function DoujinInfoBuilder() {
     try {
       const blob = await getBlob();
       const a = Object.assign(document.createElement("a"), { href: URL.createObjectURL(blob), download: `${info.boothName || "info"}.png` });
-      a.click(); URL.revokeObjectURL(a.href);
+      a.click();
+      setTimeout(() => URL.revokeObjectURL(a.href), 1000);
     } catch { alert("이미지 저장 실패. 스크린샷을 이용해주세요."); }
     finally { setSaving(false); }
   };
@@ -415,7 +415,7 @@ export default function DoujinInfoBuilder() {
                 {info.eventName && <div style={{ fontSize: 11, fontWeight: 600, color: c.sub, letterSpacing: ".04em", marginBottom: 4, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{info.eventName}</div>}
                 {info.boothName && <div style={{ fontSize: 30, fontWeight: 900, color: c.text, letterSpacing: "-.02em", lineHeight: 1.15, wordBreak: "keep-all", overflowWrap: "break-word" }}>{info.boothName}</div>}
                 {(info.nickname || info.sns) && (
-                  <div style={{ fontSize: 13, color: c.sub, marginTop: 4, fontWeight: 500 }}>
+                  <div style={{ fontSize: 13, color: c.sub, marginTop: 4, fontWeight: 500, overflowWrap: "break-word", wordBreak: "keep-all" }}>
                     {info.nickname}{info.sns && <span style={{ marginLeft: 6, color: c.accent2 }}>{info.sns}</span>}
                   </div>
                 )}
@@ -438,7 +438,7 @@ export default function DoujinInfoBuilder() {
                 <div style={{ fontSize: 11, fontWeight: 700, color: c.accent2, letterSpacing: ".06em", textTransform: "uppercase", marginBottom: 6 }}>
                   Notice
                 </div>
-                <div style={{ fontSize: 12.5, color: c.text, lineHeight: 1.75, whiteSpace: "pre-wrap", wordBreak: "keep-all" }}>
+                <div style={{ fontSize: 12.5, color: c.text, lineHeight: 1.75, whiteSpace: "pre-wrap", wordBreak: "keep-all", overflowWrap: "break-word" }}>
                   {boothNote}
                 </div>
               </div>
@@ -564,14 +564,14 @@ export default function DoujinInfoBuilder() {
                       {it.spec && <div style={{ fontSize: 12, color: c.sub, wordBreak: "keep-all", overflowWrap: "break-word" }}>{it.spec}</div>}
                       {it.price && (
                         <div style={{ marginTop: 2 }}>
-                          <span style={{ display: "inline-block", padding: "3px 12px", borderRadius: 4, background: c.accent2, color: "#fff", fontSize: 15, fontWeight: 800 }}>{it.price}</span>
+                          <span style={{ display: "inline-block", maxWidth: "100%", padding: "3px 12px", borderRadius: 4, background: c.accent2, color: "#fff", fontSize: 15, fontWeight: 800, wordBreak: "break-all", overflowWrap: "break-word" }}>{it.price}</span>
                         </div>
                       )}
                       {it.synopsis && (
                         <div style={{
                           marginTop: 6, paddingTop: 6, borderTop: `1px solid ${c.border}`,
                           fontSize: 12, color: c.sub, lineHeight: 1.7,
-                          whiteSpace: "pre-wrap", wordBreak: "keep-all",
+                          whiteSpace: "pre-wrap", wordBreak: "keep-all", overflowWrap: "break-word",
                         }}>{it.synopsis}</div>
                       )}
                     </div>
